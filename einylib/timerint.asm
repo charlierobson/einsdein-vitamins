@@ -5,33 +5,40 @@
 
 ; install 20ms timer interrupt
 ;
-; the system chains timer channels 2 & 3 to make a 1s tick for the
-; 'real time' clock. there are probably simpler ways to do this but
-; we'll just override what the system does.
+; the hardware
+; the 4 ctc channels can work in two modes, timer and counter.
+; in timer mode a channel's value is decremented once per machine
+; (clock) cycle.
+; in counter mode a channel's value is decremented once when its
+; clk/trg input is asserted.
+; on the einy channel 2's zero count/timeout output is hardwired to
+; channel 3's clk/trigger input. so channel 2 can be used to clock
+; channel 3. that's precisely what happens to get the 1s 'realtime'
+; clock.
+; channel 2 is operated in timer mode, and 3 in counter mode.
+; channel 3 counts the number of times channel 2 crosses zero.
 ;
-; the timers are tickes at 4mhz, we want a tick of 20ms, or 0.02s, or 80000/4000000.
-; the system uses a 256 prescaler, but we can't use that so the 16x prescaler comes
-; out to play
+; toward 20ms
+; the timers are ticked at 4mhz. we want a tick of 20ms, or 0.02s,
+; or 80000/4000000.
+; to get to this rate the /16 prescaler comes out to play:
 ;
 ; 80000 = (50 * 16) * 100
 ;
 initerupts:
 	di
+
 	ld		hl,_irqhandler		; install own handler over the system's timer3 vector
 	ld		($fb06),hl
 
-	ld		c,2ah				; io port for ctc channel 2
-	ld		a,1fh				; disable interrupt + timer mode + prescaler 16 + rising edge + clk starts + time constant follows + reset + control
-	ld		b,32h				; tc = 50
-	out		(c),a				; timer config
-	nop
-	out		(c),b				; timer time constant
-	inc		c					; io port for ctc channel 3
-	ld		a,0dfh				; enable interrupt + counter mode + (n/a) + rising edge + clk starts + time constant follows + reset + control
-	ld		b,64h				; tc = 100
-	out		(c),a				; timer config
-	nop
-	out		(c),b				; timer time constant
+	ld		a,$1f				; disable interrupt + timer mode + prescaler 16 + rising edge + clk starts + time constant follows + reset + control
+	out		($2a),a				; io port for ctc channel 2, write timer config
+	ld		a,50
+	out		($2a),a				; timer time constant
+	ld		a,$df				; enable interrupt + counter mode + (n/a) + rising edge + clk starts + time constant follows + reset + control
+	out		($2b),a				; io port for ctc channel 3, timer config
+	ld		a,100
+	out		($2b),a				; timer time constant
 	ei
 	reti						; do this here in order to flush any pending interrupts. bernie rose knows, don't argue.
 
