@@ -49,7 +49,37 @@ TC3				.equ 54
 	; the aim is to tighten the timer such that absolute minimum of time
 	; is wasted waiting for the vblank.
 
-	jr		$
+loop:
+	; can't use the vdp vsync as it's read (and thus reset) in the interrupt
+	ld		hl,frames
+	ld		a,(hl)
+-:	cp		(hl)
+	jr		z,{-}
+
+	call	input.update
+	ld		hl,teecee3
+
+	ld		a,(kup)
+	and		3
+	cp		1
+	jr		nz,{+}
+
+	inc		(hl)
+
++:	ld		a,(kdown)
+	and		3
+	cp		1
+	jr		nz,{+}
+
+	dec		(hl)
+
++:	ld		a,(kexit)
+	and		3
+	cp		1
+	jr		nz,loop
+
+	jp		0
+
 
 
 _irqhandler:
@@ -66,7 +96,7 @@ _irqhandler:
 	rla
 	jr		nc,{-}
 
-	ld		a,COL_BLACK			; set order black
+	ld		a,COL_BLACK			; set border black
 	out		(VDP_REG),a
 	ld		a,$87
 	out		(VDP_REG),a
@@ -85,10 +115,25 @@ _irqhandler:
 
 	ld		a,$df
 	out		(CTC_TMR3),a
+teecee3 = $+1
 	ld		a,TC3
 	out		(CTC_TMR3),a
+
+	call	input.readrawbits
+
+	ld		hl,(frames)
+	inc		hl
+	ld		(frames),hl
 
 	pop		af
 	exx
 	ei
 	reti
+
+
+frames:
+	.dw		0
+
+
+#include "input.asm"
+#include "math.asm"

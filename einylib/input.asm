@@ -31,15 +31,15 @@ _rawkeystates:
 ; keyboard row number, row data mask, trigger impulse / key state
 
 _states:
-	.byte	0,%01000000,0		; key 1 / space
-	.byte	5,%00001000,0		; key 2 / r
-	.byte	1,%00000001,0		; key 3 / f0
+	.byte	0,%01000000,0		; exit	(space)
+	.byte	5,%01000000,0		; up	(Q)
+	.byte	6,%01000000,0		; down	(A)
 
 ; actual input impulse addresses
 ;
-key1 = _states + 2
-key2 = _states + 5
-key2 = _states + 8
+kexit = _states + 2
+kup   = _states + 5
+kdown = _states + 8
 
 ; input impulse is a bit train of pressed/not pressed states
 ;
@@ -70,7 +70,7 @@ key2 = _states + 8
 ;
 reset:
 	ld		b,3			; 3 keys
-	ld		hl,key1		; starting here
+	ld		hl,kexit	; starting here
 
 _prepinputs:
 	ld		de,3 		; bytes per state
