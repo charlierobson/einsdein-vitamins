@@ -3,7 +3,7 @@
 ;
 .module input
 
-; for kb description see einstein hardware manual, fig 3.5, section 3.8
+; for kb description & row, col vals see einstein hardware manual, fig 3.5, section 3.8
 
 PSG_SEL			.equ $02		; latch address
 PSG_RD			.equ $02		; read from psg
@@ -26,20 +26,24 @@ _rawkeystates:
 	.ds		9
 
 
-; input state data:
+; input state data
+;
+; define your keyboard button requirements thus:
 ;
 ; keyboard row number, row data mask, trigger impulse / key state
-
-_states:
-	.byte	0,%01000000,0		; exit	(space)
-	.byte	5,%01000000,0		; up	(Q)
-	.byte	6,%01000000,0		; down	(A)
-
-; actual input impulse addresses
+; e.g:
 ;
-kexit = _states + 2
-kup   = _states + 5
-kdown = _states + 8
+;_states:
+; 	.byte	0,%01000000,0		; exit	(space)
+; 	.byte	5,%01000000,0		; up	(Q)
+; 	.byte	6,%01000000,0		; down	(A)
+
+; actual input impulse addresses are relative like so:
+;
+; kexit = _states + 2
+; kup   = _states + 5
+; kdown = _states + 8
+
 
 ; input impulse is a bit train of pressed/not pressed states
 ;
@@ -68,15 +72,15 @@ kdown = _states + 8
 
 ; reset input states
 ;
+; enter with hl -> key list
+; b with the number of buttons
+;
 reset:
-	ld		b,3			; 3 keys
-	ld		hl,kexit	; starting here
-
-_prepinputs:
 	ld		de,3 		; bytes per state
+	dec		hl			; adjust hl to point to key state member
 
--:	ld		(hl),0		; reset to never held
-	add		hl,de
+-:	add		hl,de
+	ld		(hl),0		; reset to never held
 	djnz	{-}
 
 	ret
@@ -84,12 +88,13 @@ _prepinputs:
 
 ; update input states
 ;
+; enter with hl -> key list
+; b with the number of buttons
+;
 update:
-	ld		hl,_states
 	call	_updatestate		; key 1
-	call	_updatestate		; key 2
-
-	; fall into here for last input, key 3
+	djnz	update
+	ret
 
 _updatestate:
 	; hl points at first input state block,

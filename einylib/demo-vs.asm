@@ -26,6 +26,10 @@ TC3				.equ 54
 
 	di
 
+	ld		b,3					; 3 buttons
+	ld		hl,buttons			; starting here
+	call	input.reset			; reset!
+
 	ld		hl,_irqhandler		; install own handler over the system's timer3 vector
 	ld		($fb06),hl
 
@@ -41,13 +45,16 @@ TC3				.equ 54
 
 	ei
 
-	; awaaay we go.
+	; and awaaay we go.
 
 	; result should be thin blue line. the line starts at the time the
 	; timer irq fires, and ends when vsync bit is set in VDP.
 
 	; the aim is to tighten the timer such that absolute minimum of time
 	; is wasted waiting for the vblank.
+
+	; in MESS line is a single pixel thick, one scanline.
+	; on real hardware line is 2..3 scanlines and background colour glitch
 
 loop:
 	; can't use the vdp vsync as it's read (and thus reset) in the interrupt
@@ -56,7 +63,10 @@ loop:
 -:	cp		(hl)
 	jr		z,{-}
 
-	call	input.update
+	ld		b,3					; 3 buttons
+	ld		hl,buttons			; starting here
+	call	input.update		; update!
+
 	ld		hl,teecee3
 
 	ld		a,(kup)
@@ -79,6 +89,7 @@ loop:
 	jr		nz,loop
 
 	jp		0
+
 
 
 
@@ -133,6 +144,17 @@ teecee3 = $+1
 
 frames:
 	.dw		0
+
+
+buttons:
+	.byte	0,%01000000,0		; exit	(space)
+	.byte	5,%01000000,0		; up	(Q)
+	.byte	6,%01000000,0		; down	(A)
+
+kexit = buttons + 2
+kup   = buttons + 5
+kdown = buttons + 8
+
 
 
 #include "input.asm"
