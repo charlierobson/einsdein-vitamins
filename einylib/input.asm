@@ -1,6 +1,8 @@
 ;-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 ; use BRASS assembler: http://www.benryves.com/bin/brass/
 ;
+; TABS = 4
+;
 .module input
 
 ; for kb description & row, col vals see einstein hardware manual, fig 3.5, section 3.8
@@ -21,9 +23,41 @@ JUSTRELEASED	.equ 2
 ;
 ; to be read once per program cycle, represents key switch states
 ;
-	.align 8
+	.align	8
 _rawkeystates:
 	.ds		9
+_rawkeyallmask:
+	.db		0
+
+
+; The tattie keyboard matrix
+;
+; ROW NUMBER
+;	|
+;		7	6	5	4	3	2	1	0		COLUMN BIT
+;
+;	0	ESC	SP	ENT	AL	F7	F0		BRK
+;
+;	1	0	||	LF	_	<-	P	O	I
+;
+;	2	F5	9	HT	->	:	;	L	K
+;
+;	3	F4	UP	=	DEL	8	/	.	,
+;
+;	4	F3	4	2	3	4	5	6	7
+;
+;	5	F2	Q	W	E	R	T	Y	U
+;
+;	6	F1	A	S	D	F	G	H	J
+;
+;	7	F6	Z	X	C	V	B	N	M
+;
+;	[8]	SHF	CTL	GRA
+;
+; e.g. '6' key appears in row 4, bit 1
+;
+; CTL, GRAPH and both SHIFTs are connected to a different input (KYBRDINTMASK)
+; which is read by doing: in a,($20). this is mapped to a virtual row 8
 
 
 ; input state data
@@ -150,8 +184,13 @@ readrawbits:
 	ld		d,a						; can be used to quickly check if any key is pressed
 	djnz	{-}
 
-	ld		a,d						; stash digest at end of list
-	ld		(_rawkeystates+8),a
+	in		a,($20)					; (KBDMSK) read shifts, ctl, graph
+	or		%00011111				; remove uninteresting bits
+	cpl								; active low -> hi
+	ld		(_rawkeystates+8),a		; virtual row 8
+
+	or		d						; stash digest at end of list
+	ld		(_rawkeyallmask),a
 	ret
 
 
@@ -206,7 +245,7 @@ rowcoltokeynum:
 ;
 anykeypressed:
 	push	af
-	ld		a,(_rawkeystates+8)
+	ld		a,(_rawkeyallmask)
 	or		a
 	pop		af
 	ret

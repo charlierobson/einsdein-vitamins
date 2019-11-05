@@ -28,6 +28,9 @@
 initerupts:
 	di
 
+	ld		a,1
+	out		($20),a				; (KBDMSK) disable keyboard interrupts, they interfere with ctc
+
 	ld		hl,_irqhandler		; install own handler over the system's timer3 vector
 	ld		($fb06),hl
 
