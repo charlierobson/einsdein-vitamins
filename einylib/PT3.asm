@@ -907,7 +907,7 @@ ESldAdd:	.equ $+1
 
 ROUT:	XOR A
 ROUT_A0:
-	LD C,$A0
+	LD C,PSG_SEL
 	LD HL,AYREGS
 LOUT:	OUT (C),A
 	INC C
