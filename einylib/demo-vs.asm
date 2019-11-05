@@ -33,6 +33,11 @@ TC3				.equ 54
 	ld		hl,_irqhandler		; install own handler over the system's timer3 vector
 	ld		($fb06),hl
 
+	in		a,(VDP_STAT)		; clear existing vsync flag
+-:	in		a,(VDP_STAT)		; wait for next one
+	rla
+	jr		nc,{-}
+
 	ld		a,$1f				; disable interrupt + timer mode + prescaler 16 + rising edge + clk starts + time constant follows + reset + control
 	out		(CTC_TMR2),a		; ctc channel 2 write timer config
 	ld		a,TC2
@@ -114,7 +119,7 @@ _irqhandler:
 
 	; if we had a stable timer config that didn't drift then
 	; we wouldn't need to reset the timer. but life's too short
-	; to wast finding one :D so...
+	; to waste finding one :D so...
 	;
 	; reset timer to fire in 19.9 milliseconds time
 	; (92*16)*54 = 79488 / 4000000 = 0.0199 sec
