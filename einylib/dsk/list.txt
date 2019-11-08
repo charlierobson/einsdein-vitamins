@@ -1,2 +1,4 @@
-pt3.com
+cafe.pt3
+irq.com
 vs.com
+pt3.com

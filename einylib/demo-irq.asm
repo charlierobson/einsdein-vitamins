@@ -10,10 +10,8 @@
 -:	call	vdp.awaitvsync
 	call	input.update
 
-	ld		a,(key1)			; get space key state
-	and		3
-	cp		input.JUSTRELEASED	; just released
-	jr		nz,{-}
+	call	input.anykeypressed
+	jr		z,{-}
 
 	jp		0					; restart
 

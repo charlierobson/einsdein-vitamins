@@ -15,15 +15,110 @@ COL_BLACK		.equ $01
 COL_DBLUE		.equ $04
 
 ; time constants to give us a 20 millisecond timer period
-TC2				.equ 50
-TC3				.equ 100
+TC2				.equ 92
+TC3				.equ 54
+
+BDOS			.equ 5
 
 
 	.org	$100
 
-	ld		sp,$7fff
+	; upon entry $80 is command buffer
+	; $80 holds number of characters found after command name 0..n
+	; $81.. characters typed after command, including space
+	; $81+n 0 terminating byte
 
-	call	START				; initialise song
+	ld		hl,$80					; start of command line in memory, contains length, then all chars following cmd name incl. space
+	ld		a,(hl)
+	cp		0
+	jp		z,_invalidname			; no parameters
+
+	inc		hl
+	call	mem.szfindfirstnonspace	; find start of filename, skipping spaces in command line
+	jp		z,_invalidname			; z set if only spaces ...
+
+	inc		hl						; does filename have a drive spec?
+	ld		a,(hl)
+	dec		hl
+	cp		':'
+	jp		nz,_nodrivespec			; probably not
+
+	ld		a,(hl)					; see if drive is in range '0'..'3' incl
+	cp		'0'
+	jp		c,_invalidname			; char is less than '0',
+
+	cp		'3'+1
+	jp		nc,_invalidname			; char is greater than '3'
+
+	sub		'0'-1					; convert to 1..4 to match drive drive number spec
+	ld		(fcb),a
+
+	inc		hl						; skip drive spec
+	inc		hl
+
+_nodrivespec:
+	ld		de,fcb+1
+	call	mem.copyword			; copy word to fcb. word is sequence of alphanum chars. c is count of chars copied
+
+	dec		c						; dec c will handle the 0 length case for us
+	ld		a,7						; c should be in range 0..7 - if it is 8 or more then we've copied too much
+	sub		c						; if we copied 0 or more than 8 characters it's an illegal name
+	jp		c,_invalidname
+
+	ld		a,(hl)					; check for extension
+	and		a
+	jr		z,_done
+
+	cp		'.'						; was terminated by something other than '.' .. 'baint roite
+	jp		nz,_invalidname
+
+	inc		hl						; skip '.'
+	ld		de,fcb+9				; finally ready for extension if there is one
+	call	mem.copyword
+	dec		c
+	ld		a,3
+	sub		c
+	jp		c,_invalidname			; if we copied 0 or more than 3 characters it's an illegal name
+
+_done:
+	ld		de,fcb					; open file
+	ld		c,15
+	call	BDOS
+
+	inc		a						; a = 255 if error
+	jp		z,_invalidname
+
+	ld		hl,tune					; set load buffer address
+	ld		(selfmodaddr),hl
+
+selfmodaddr = $+1
+-:	ld		de,0					; retrieve modified buffer address
+	ld		hl,128
+	add		hl,de
+	ld		(selfmodaddr),hl		; stash buffer address + 128 for next cycle
+	ld		c,26
+	call	BDOS					; set buffer address
+
+	ld		e,'*'
+	ld		c,2
+	call	BDOS
+
+	ld		de,fcb					; read data
+	ld		c,20
+	call	BDOS
+	or		a
+	jr		z,{-}
+
+	ld		e,10
+	ld		c,2
+	call	BDOS
+	ld		e,13
+	ld		c,2
+	call	BDOS
+
+_okreadyletsdoit:
+	ld		hl,tune
+	call	START+3				; initialise song
 
 	di
 
@@ -69,6 +164,10 @@ loop:
 -:	cp		(hl)
 	jr		z,{-}
 
+	ld		a,(SETUP)
+	rlca
+	jr		c,_ended
+
 	ld		b,3					; 3 buttons
 	ld		hl,buttons			; starting here
 	call	input.update		; update!
@@ -78,8 +177,16 @@ loop:
 	cp		1
 	jr		nz,loop
 
-	jp		0
+_ended:
+	ld		c,0					; warm boot
+	call	BDOS
 
+
+
+_invalidname:
+    .db     $cf,$cf
+	.db		"Invalid filename",'.'+$80
+	ret
 
 
 
@@ -92,10 +199,10 @@ _irqhandler:
 	rla
 	jr		nc,{-}
 
-	ld		a,COL_DBLUE			; set border black
-	out		(VDP_REG),a
-	ld		a,$87
-	out		(VDP_REG),a
+	; ld		a,COL_DBLUE			; set border black
+	; out		(VDP_REG),a
+	; ld		a,$87
+	; out		(VDP_REG),a
 
 	; if we had a stable timer config that didn't drift then
 	; we wouldn't need to reset the timer. but life's too short
@@ -124,10 +231,10 @@ teecee3 = $+1
 
 	call	START+5				; play a quark
 
-	ld		a,COL_BLACK			; set border black
-	out		(VDP_REG),a
-	ld		a,$87
-	out		(VDP_REG),a
+	; ld		a,COL_BLACK			; set border black
+	; out		(VDP_REG),a
+	; ld		a,$87
+	; out		(VDP_REG),a
 
 	pop		af
 	exx
@@ -150,8 +257,16 @@ kdown = buttons + 8
 
 
 
+
 #include "input.asm"
 #include "math.asm"
+#include "mem.asm"
 #include "PT3.asm"
+
+; put this here so if any filename copying goes horribly wrong then we overwrite data and not code
+fcb:
+	.db		0
+	.db		"           "
+	.ds		36
+
 tune:
-#incbin "cafe.pt3"	; default tune
