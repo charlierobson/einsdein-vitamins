@@ -21,10 +21,9 @@ TC3				.equ 100
 
 	.org	$100
 
-
 	ld		sp,$7fff
 
-	call	START
+	call	START				; initialise song
 
 	di
 
@@ -123,7 +122,7 @@ teecee3 = $+1
 	inc		hl
 	ld		(frames),hl
 
-	call	START+5
+	call	START+5				; play a quark
 
 	ld		a,COL_BLACK			; set border black
 	out		(VDP_REG),a
@@ -154,4 +153,5 @@ kdown = buttons + 8
 #include "input.asm"
 #include "math.asm"
 #include "PT3.asm"
-#incbin "cafe.pt3"
+tune:
+#incbin "cafe.pt3"	; default tune

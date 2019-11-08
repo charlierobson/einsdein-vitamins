@@ -907,7 +907,7 @@ ESldAdd:	.equ $+1
 
 ROUT:	XOR A
 ROUT_A0:
-	LD C,PSG_SEL
+	LD C,PSG_SEL		; change here to AY base port, assumes base+0 is register select, base+1 is data 
 	LD HL,AYREGS
 LOUT:	OUT (C),A
 	INC C
