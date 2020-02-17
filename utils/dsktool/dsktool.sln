@@ -1,0 +1,37 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio 15
+VisualStudioVersion = 15.0.28307.1000
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "dsktool", "dsktool.vcxproj", "{D0452895-1F38-4271-ADDB-0298114D285E}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{B12B57FB-AD0F-4B70-86C0-42E0A112C3CE}"
+	ProjectSection(SolutionItems) = preProject
+		extrackmain.c = extrackmain.c
+		packmain.cpp = packmain.cpp
+	EndProjectSection
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|x64 = Debug|x64
+		Debug|x86 = Debug|x86
+		Release|x64 = Release|x64
+		Release|x86 = Release|x86
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{D0452895-1F38-4271-ADDB-0298114D285E}.Debug|x64.ActiveCfg = Debug|x64
+		{D0452895-1F38-4271-ADDB-0298114D285E}.Debug|x64.Build.0 = Debug|x64
+		{D0452895-1F38-4271-ADDB-0298114D285E}.Debug|x86.ActiveCfg = Debug|Win32
+		{D0452895-1F38-4271-ADDB-0298114D285E}.Debug|x86.Build.0 = Debug|Win32
+		{D0452895-1F38-4271-ADDB-0298114D285E}.Release|x64.ActiveCfg = Release|x64
+		{D0452895-1F38-4271-ADDB-0298114D285E}.Release|x64.Build.0 = Release|x64
+		{D0452895-1F38-4271-ADDB-0298114D285E}.Release|x86.ActiveCfg = Release|Win32
+		{D0452895-1F38-4271-ADDB-0298114D285E}.Release|x86.Build.0 = Release|Win32
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {603F2999-FE57-4D5B-BCB8-10296681242E}
+	EndGlobalSection
+EndGlobal
