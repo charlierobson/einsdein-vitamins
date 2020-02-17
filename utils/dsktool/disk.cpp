@@ -1,81 +1,85 @@
 #include <stdio.h>
 #include <string.h>
 #include <ctype.h>
+#include <vector>
 
 #include "disk.h"
 
 
 disk::disk()
 {
-	_diskSize = 400 * 512;
-	_buffer = new unsigned char [_diskSize];
+	_trackCount = 40;
+	_sectorsPerTrack = 10;
+	_bytesPerSector = 512;
+
+	_buffer = new unsigned char [size()];
+	_sectorOffsets = new unsigned char* [sectorCount()];
 }
 
 disk::~disk()
 {
 	delete[] _buffer;
+	delete[] _sectorOffsets;
 }
 
-void disk::format(disk* dosSrc)
+
+int disk::size() {
+	return _trackCount * _sectorsPerTrack * _bytesPerSector;
+}
+
+int disk::sectorCount() {
+	return _trackCount * _sectorsPerTrack;
+}
+
+bool disk::load(string fileName)
 {
-	unsigned char _sectr[512];
-	if (dosSrc != NULL)
+	auto src = fopen(fileName.c_str(), "rb");
+	if (src != NULL)
 	{
-		for (int i = 0; i < 20; ++i)
-		{
-			dosSrc->readSectors(_sectr, i, 1);
-			writeSectors(_sectr, i, 1);
+		fread(_buffer, 1, size(), src);
+		fclose(src);
+
+		for (auto i = 0; i < sectorCount(); ++i) {
+			_sectorOffsets[i] = _buffer + i * _bytesPerSector;
 		}
 	}
-	memset(_sectr, 0xe5, 512);
-	for (int i = 20; i < 400; ++i)
-	{
-		writeSectors(_sectr, i, 1);
-	}
+
+	return src != NULL;
 }
 
-int disk::load(string fileName)
+bool disk::save(string fileName)
 {
-	FILE* src;
-	int result = fopen_s(&src, fileName.c_str(), "rb");
-	if (!result)
+	auto dst = fopen(fileName.c_str(), "wb");
+	if (dst != NULL)
 	{
-		fread_s(_buffer, 400*512, 1, 400*512, src);
-		fclose(src);
-	}
-	return result;
-}
+		for (auto i = 0; i < sectorCount(); ++i) {
+			fwrite(_sectorOffsets[i], 1, _bytesPerSector, dst);
+		}
 
-int disk::save(string fileName)
-{
-	FILE* dst;
-	int result = fopen_s(&dst, fileName.c_str(), "wb");
-	if (!result)
-	{
-		fwrite(_buffer, 1, _diskSize, dst);
 		fclose(dst);
 	}
-	return result;
+
+	return dst != NULL;
 }
 
-int disk::readSectors(void* dest, int startSector, int sectorCount)
+vector<unsigned char> disk::readSectors(int startSector, int sectorCount)
 {
-	if (startSector + sectorCount >= 400)
-	{
-		return disk::error_invalid_sector;
+	vector<unsigned char> sectors(1,1);
+	unsigned char* p = &sectors[0];
+
+	sectors.reserve(sectorCount * _bytesPerSector);
+	for (auto i = 0; i < sectorCount; ++i) {
+		memcpy(p + i * _bytesPerSector, _sectorOffsets[startSector+ i], _bytesPerSector);
 	}
 
-	memcpy(dest, &_buffer[startSector * 512], sectorCount * 512);
-	return 0;
+	return sectors;
 }
 
-int disk::writeSectors(void* src, int startSector, int sectorCount)
+void disk::writeSectors(int startSector, int sectorCount, vector<unsigned char> sectors)
 {
-	if (startSector + sectorCount >= 400)
-	{
-		return disk::error_invalid_sector;
-	}
+	unsigned char* p = &sectors[0];
 
-	memcpy(&_buffer[startSector * 512], src, sectorCount * 512);
-	return 0;
+	for (auto i = 0; i < sectorCount; ++i) {
+		memcpy(_sectorOffsets[startSector+ i], p + i * _bytesPerSector, _bytesPerSector);
+	}
 }

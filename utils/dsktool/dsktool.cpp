@@ -17,7 +17,7 @@ int main(int argc, char** argv)
 	if (args.ispresent("dir")) {
 
 		auto srcDSK = dsk();
-		if (srcDSK.load(dskName) != dsk::error_none) {
+		if (!srcDSK.load(dskName)) {
 			exit(1);
 		}
 
@@ -30,7 +30,7 @@ int main(int argc, char** argv)
 	else if (args.ispresent("extract:")) {
 
 		auto srcDSK = dsk();
-		if (srcDSK.load(dskName) != dsk::error_none) {
+		if (!srcDSK.load(dskName)) {
 			exit(1);
 		}
 

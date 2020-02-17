@@ -37,11 +37,12 @@ public:
 		if (dotfound)
 		{
 			std::string extn = filename.substr(expos + 1);
-			dotfound = _stricmp(extn.c_str(), extension) == 0;
+			dotfound = strcmp(extn.c_str(), extension) == 0;
 		}
 
 		return dotfound;
 	}
+
 private:
 	pathutil(){};
 	~pathutil(){};
@@ -124,7 +125,7 @@ public:
 		  {
 			  for(int i = 1; i < m_argc; ++i)
 			  {
-				  if (_strnicmp(pname,m_argv[i],strlen(pname)) == 0)
+				  if (strncmp(pname,m_argv[i],strlen(pname)) == 0)
 				  {
 					  eval(&m_argv[i][strlen(pname)], target);
 
@@ -150,7 +151,7 @@ public:
 		  {
 			  for(int i = 1; i < m_argc; ++i)
 			  {
-				  if (_strnicmp(pname,m_argv[i],strlen(pname)) == 0)
+				  if (strncmp(pname,m_argv[i],strlen(pname)) == 0)
 				  {
 					  target = &m_argv[i][strlen(pname)];
 					  return true;
@@ -183,7 +184,7 @@ public:
 		  {
 			  for(int i = 1; i < m_argc; ++i)
 			  {
-				  if (_strnicmp(pname,m_argv[i],strlen(pname)) == 0)
+				  if (strncmp(pname,m_argv[i],strlen(pname)) == 0)
 				  {
 					  return true;
 				  }

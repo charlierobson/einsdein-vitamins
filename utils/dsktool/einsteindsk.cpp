@@ -49,8 +49,8 @@ vector<string> einsteindsk::dir() {
 		}
 		dirent;
 
-		vector<BYTE> sectorBytes = _dsk.sector(i);
-		dirent* p = (dirent*)(&sectorBytes[0]);
+		auto sectorBytes = _dsk.readSectors(i, 1);
+		dirent* p = (dirent*)(sectorBytes.data());
 
 		for (auto j = 0; j < 16; ++j, ++p)
 		{
@@ -119,8 +119,8 @@ void einsteindsk::getfiles()
 		}
 		dirent;
 
-		vector<BYTE> sectorBytes = _dsk.sector(i);
-		dirent* p = (dirent*)(&sectorBytes[0]);
+		vector<BYTE> sectorBytes = _dsk.readSectors(i, 1);
+		dirent* p = (dirent*)(sectorBytes.data());
 
 		for (j = 0; j < 16; ++j, ++p)
 		{
@@ -167,8 +167,8 @@ void einsteindsk::getfiles()
 				{
 					// no file object exists for the current directory entry: create one
 
-					strcpy_s(outname2, 256, outname);
-					strcat_s(outname2, 256, bfr);
+					strcpy(outname2, outname);
+					strcat(outname2, bfr);
 
 					outfile = new einyfile(outname2, bfr);
 					files.push_back(outfile);
@@ -188,11 +188,8 @@ void einsteindsk::getfiles()
 				{
 					// read the block
 					int base = (p->blockIDs[block] - 1) * 4 + 24;
-
-					unsigned char bfr[512*4];
-					_dsk.readSectors(bfr, base, 4);
-
-					outfile->write128(bfr, nb > 16 ? 16 : nb, p->extent, block);
+					auto sectors = _dsk.readSectors(base, 4);
+					outfile->write128(sectors.data(), nb > 16 ? 16 : nb, p->extent, block);
 
 					nb -= 16;
 					++block;

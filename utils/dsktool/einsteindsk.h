@@ -83,10 +83,8 @@ public:
 		}
 		else
 		{
-			FILE* outfile;
-
-			err = fopen_s(&outfile, _name.c_str(), "wb");
-			if (!err)
+			FILE* outfile = fopen(_name.c_str(), "wb");
+			if (outfile != NULL)
 			{
 				fwrite(_data, _size, 1, outfile);
 				fclose(outfile);

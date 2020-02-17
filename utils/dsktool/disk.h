@@ -1,31 +1,29 @@
 #pragma once
 
 #include <string>
+#include <vector>
 using namespace std;
 
 class disk
 {
 protected:
 	unsigned char* _buffer;
-	int _diskSize;
+	unsigned char** _sectorOffsets;
+
+	int _trackCount;
+	int _sectorsPerTrack;
+	int _bytesPerSector;
 
 public:
 	disk();
 	virtual ~disk();
-	virtual void format(disk* dosSrc);
-	virtual int load(string fileName);
-	virtual int save(string fileName);
-	virtual int readSectors(void* dest, int startSector, int sectorCount);
-	virtual int writeSectors(void* src, int startSector, int sectorCount);
 
-	enum
-	{
-		error_none,
-		error_invalid_format,
-		error_file_operation,
-		error_invalid_sector,
-		error_not_implemented,
+	int size();
+	int sectorCount();
 
-		error_max
-	};
+	virtual bool load(string fileName);
+	virtual bool save(string fileName);
+
+	vector<unsigned char> readSectors(int startSector, int sectorCount);
+	void writeSectors(int startSector, int sectorCount, vector<unsigned char> sectorData);
 };
