@@ -33,6 +33,7 @@ typedef struct
 	BYTE filler;
 }
 TRACK_INFORMATION_BLOCK;
+//24
 
 typedef struct
 {
@@ -45,11 +46,11 @@ typedef struct
 	WORD dataLength;
 }
 SECTOR_INFORMATION_BLOCK;
+// 8
 
-
-bool dsk::parseDSK(vector<char>& rawDSK)
+bool dsk::parseDSK()
 {
-	BYTE* fptr = (BYTE*)rawDSK.data();
+	BYTE* fptr = (BYTE*)_raw.data();
 
 	TRACK_INFORMATION_BLOCK* tib;
 	SECTOR_INFORMATION_BLOCK* sib;
@@ -85,7 +86,7 @@ bool dsk::parseDSK(vector<char>& rawDSK)
 
 	// ok, work out the sector offsets in the file
 
-	for (auto i = 0; i < _trackCount; ++i)
+	for (auto track = 0; track < _trackCount; ++track)
 	{
 		tib = (TRACK_INFORMATION_BLOCK*)fptr;
 		sib = (SECTOR_INFORMATION_BLOCK*)(fptr + sizeof(TRACK_INFORMATION_BLOCK));
@@ -93,9 +94,9 @@ bool dsk::parseDSK(vector<char>& rawDSK)
 		fptr += 256;
 		BYTE* sectorBase = fptr;
 
-		for (auto j = 0; j < 10; ++j)
+		for (auto sector = 0; sector < 10; ++sector)
 		{
-			_sectorOffsets[i * 10 + sib->sectorID] = fptr;
+			_sectorOffsets[track * 10 + sib->sectorID] = fptr;
 			fptr += 512;
 
 			++_sectorsPerTrack;
@@ -119,17 +120,16 @@ dsk::~dsk()
 bool dsk::load(string fileName)
 {
 	size_t size;
-	std::vector<char> raw;
     ifstream dskFile(fileName, ios::binary|ios::ate);
 
 	if (dskFile.good()) {
-		size = dskFile.tellg();
-		raw.reserve(size);
+		size = (size_t)dskFile.tellg();
+		_raw.resize(size);
 		dskFile.seekg(0, ios::beg);
-		dskFile.read(raw.data(), size);
+		dskFile.read(_raw.data(), size);
 	}
 
-	return memcmp(raw.data(), "EXTENDED CPC DSK", 16) == 0
+	return memcmp(_raw.data(), "EXTENDED CPC DSK", 16) == 0
 		&& size == 215296
-		&& parseDSK(raw);
+		&& parseDSK();
 }

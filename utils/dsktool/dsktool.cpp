@@ -1,8 +1,12 @@
 #include <iostream>
+#include <filesystem>
 
 #include "argcrack.h"
 #include "einsteindsk.h"
 #include "dsk.h"
+
+using namespace std::filesystem;
+
 
 int main(int argc, char** argv)
 {
@@ -12,7 +16,11 @@ int main(int argc, char** argv)
 
 	argcrack args(argc, argv);
 
-	std::string dskName(argv[argc - 1]);
+	string to("./");
+	args.getstring("to:", to);
+	path outputFolder(to);
+
+	string dskName(argv[argc - 1]);
 
 	if (args.ispresent("dir")) {
 
@@ -21,11 +29,11 @@ int main(int argc, char** argv)
 			exit(1);
 		}
 
-		auto einyDisk = new einsteindsk(srcDSK);
-		auto direntries = einyDisk->dir();
-		for (auto name : direntries) {
-			cout << name << std::endl;
-		}
+		einsteindsk einyDisk(srcDSK);
+		for_each(einyDisk._files.begin(), einyDisk._files.end(), [](einyfile* file)
+		{
+			cout << file->_name << "  (" << file->_size << ")" << endl;
+		});
 	}
 	else if (args.ispresent("extract:")) {
 
@@ -34,25 +42,21 @@ int main(int argc, char** argv)
 			exit(1);
 		}
 
-		auto einyDisk = new einsteindsk(srcDSK);
-		auto direntries = einyDisk->dir();
+		einsteindsk einyDisk(srcDSK);
 
 		string fileToExtract;
 		if (!args.getstring("extract:", fileToExtract)) {
 			exit(1);
 		}
 
-		if (fileToExtract.compare("*") == 0) {
-			// extract all
-		}
-
 		std::transform(fileToExtract.begin(), fileToExtract.end(), fileToExtract.begin(), ::toupper);
-		if (std::find(direntries.begin(), direntries.end(), fileToExtract) == direntries.end()) {
-			exit(1);
-		}
-
-		// extract single file
-
-		puts("extracted");
+		for_each(einyDisk._files.begin(), einyDisk._files.end(), [&](einyfile* file)
+		{
+			if (fileToExtract.compare("*") == 0 || fileToExtract.compare(file->_name) == 0) {
+				path name = outputFolder / file->_name;
+				name.make_preferred();
+				cout << "extracting " << name << std::endl;
+			}
+		});
 	}
 }

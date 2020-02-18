@@ -8,8 +8,9 @@ using namespace std;
 
 class dsk : public disk
 {
-private:
-	bool parseDSK(vector<char>& rawDSK);
+	std::vector<char> _raw;
+
+	bool parseDSK();
 
 public:
 	dsk();

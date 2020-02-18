@@ -64,12 +64,10 @@ bool disk::save(string fileName)
 
 vector<unsigned char> disk::readSectors(int startSector, int sectorCount)
 {
-	vector<unsigned char> sectors(1,1);
-	unsigned char* p = &sectors[0];
-
-	sectors.reserve(sectorCount * _bytesPerSector);
+	vector<unsigned char> sectors;
+	sectors.resize(sectorCount * _bytesPerSector);
 	for (auto i = 0; i < sectorCount; ++i) {
-		memcpy(p + i * _bytesPerSector, _sectorOffsets[startSector+ i], _bytesPerSector);
+		memcpy(sectors.data() + i * _bytesPerSector, _sectorOffsets[startSector + i], _bytesPerSector);
 	}
 
 	return sectors;
@@ -77,9 +75,7 @@ vector<unsigned char> disk::readSectors(int startSector, int sectorCount)
 
 void disk::writeSectors(int startSector, int sectorCount, vector<unsigned char> sectors)
 {
-	unsigned char* p = &sectors[0];
-
 	for (auto i = 0; i < sectorCount; ++i) {
-		memcpy(_sectorOffsets[startSector+ i], p + i * _bytesPerSector, _bytesPerSector);
+		memcpy(_sectorOffsets[startSector+ i], sectors.data() + i * _bytesPerSector, _bytesPerSector);
 	}
 }

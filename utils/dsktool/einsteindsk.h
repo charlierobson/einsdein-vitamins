@@ -10,9 +10,11 @@ using namespace std;
 class einyfile
 {
 public:
-	einyfile(char* name, char* root) :
+	string _name;
+	int _size;
+
+	einyfile(char* name) :
 		_name(name),
-		_root(root),
 		_size(0),
 		_corrupt(false)
 	{
@@ -21,7 +23,7 @@ public:
 
 	bool nameis(char* name)
 	{
-		return _root.compare(name) == 0;
+		return _name.compare(name) == 0;
 	}
 
 	void write128(unsigned char* ptr, int nsectors, int extent, int block)
@@ -71,41 +73,37 @@ public:
 		}
 	}
 
-	int close()
-	{
-		int err = -1;
+	//int close()
+	//{
+	//	int err = -1;
 
-		printf(" %s - ", _root.c_str());
+	//	printf(" %s - ", _root.c_str());
 
-		if (_corrupt)
-		{
-			puts(" File is corrupt.");
-		}
-		else
-		{
-			FILE* outfile = fopen(_name.c_str(), "wb");
-			if (outfile != NULL)
-			{
-				fwrite(_data, _size, 1, outfile);
-				fclose(outfile);
+	//	if (_corrupt)
+	//	{
+	//		puts(" File is corrupt.");
+	//	}
+	//	else
+	//	{
+	//		FILE* outfile = fopen(_name.c_str(), "wb");
+	//		if (outfile != NULL)
+	//		{
+	//			fwrite(_data, _size, 1, outfile);
+	//			fclose(outfile);
 
-				printf(" Wrote %d\n", _size);
-			}
-			else
-			{
-				printf(" Failed: err = %d\n", err);
-			}
-		}
+	//			printf(" Wrote %d\n", _size);
+	//		}
+	//		else
+	//		{
+	//			printf(" Failed: err = %d\n", err);
+	//		}
+	//	}
 
-		return err;
-	}
+	//	return err;
+	//}
 
 private:
 	bool _corrupt;
-
-	int _size;
-
-	std::string _name, _root;
 
 	unsigned char _data[100 * 1024];
 };
@@ -113,13 +111,14 @@ private:
 
 class einsteindsk
 {
-	dsk& _dsk;
-	void getfiles();
-
 public:
+	vector<einyfile*> _files;
+
 	einsteindsk(dsk& srcDSK);
 	virtual ~einsteindsk();
 
-	vector<string> dir();
-//	vector<einyfile> files();
+private:
+	dsk& _dsk;
+
+	void getfiles();
 };
