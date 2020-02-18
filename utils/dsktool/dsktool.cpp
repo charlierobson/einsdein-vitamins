@@ -17,14 +17,16 @@ int main(int argc, char** argv)
 		cout << "  DIR" << endl;
 		cout << "  EXTRACT * (TO path-to-directory)" << endl;
 		cout << "  EXTRACT filename (TO path-to-directory)" << endl;
-		cout << "  INSERT path-to-inserted-file" << endl;
+		cout << "  INSERT filename" << endl;
+
+//		cout << "  CREATE path-to-folder" << endl;
 
 		exit(1);
 	}
 
-	path dskName(argv[argc - 1]);
+	string dskName(argv[argc - 1]);
 	einsteindsk einyDisk;
-	if (!einyDisk.load(dskName.string())) {
+	if (!einyDisk.load(dskName)) {
 		exit(1);
 	}
 
@@ -55,5 +57,19 @@ int main(int argc, char** argv)
 				cout << "extracting " << name << " ... " << (file->save(name.string()) ? "OK" : "FAIL") << endl;
 			}
 		});
+	}
+	else if (args.ispresent("insert")) {
+
+		string fileToInsert;
+		if (!args.getstring("insert", fileToInsert)) {
+			exit(1);
+		}
+
+		auto nameOnly = path(fileToInsert).filename().string();
+		std::transform(nameOnly.begin(), nameOnly.end(), nameOnly.begin(), ::toupper);
+
+		einyDisk._files.push_back(new einyfile(nameOnly, disk::loadBytes(fileToInsert)));
+
+		einyDisk.save(dskName);
 	}
 }

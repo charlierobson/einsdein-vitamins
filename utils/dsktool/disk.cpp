@@ -2,64 +2,67 @@
 #include <string.h>
 #include <ctype.h>
 #include <vector>
+#include <fstream>
 
 #include "disk.h"
 
 
-disk::disk()
+void disk::init(int tracks, int sectors, int bytesPerSector)
 {
-	_trackCount = 40;
-	_sectorsPerTrack = 10;
-	_bytesPerSector = 512;
-
-	_buffer = new unsigned char [size()];
-	_sectorOffsets = new unsigned char* [sectorCount()];
+	_trackCount = tracks;
+	_sectorsPerTrack = sectors;
+	_bytesPerSector = bytesPerSector;
+	_sectorOffsets.resize(_trackCount * _sectorsPerTrack);
 }
 
-disk::~disk()
+int disk::size()
 {
-	delete[] _buffer;
-	delete[] _sectorOffsets;
-}
-
-
-int disk::size() {
 	return _trackCount * _sectorsPerTrack * _bytesPerSector;
 }
 
-int disk::sectorCount() {
+int disk::sectorCount()
+{
 	return _trackCount * _sectorsPerTrack;
 }
 
-bool disk::load(string fileName)
+vector<unsigned char> disk::loadBytes(string filePath)
 {
-	auto src = fopen(fileName.c_str(), "rb");
-	if (src != NULL)
-	{
-		fread(_buffer, 1, size(), src);
-		fclose(src);
+	vector<unsigned char> data;
+	ifstream input(filePath, ios::binary | ios::ate);
 
-		for (auto i = 0; i < sectorCount(); ++i) {
-			_sectorOffsets[i] = _buffer + i * _bytesPerSector;
-		}
+	if (input.good()) {
+		auto size = (size_t)input.tellg();
+		data.resize(size);
+		input.seekg(0, ios::beg);
+		input.read((char*)data.data(), size);
 	}
 
-	return src != NULL;
+	return data;
+}
+
+// base implementation is a raw disk image dump, contiguous sectors
+//
+bool disk::load(string fileName)
+{
+	init(40, 10, 512);
+
+	_raw = loadBytes(fileName);
+	for (auto i = 0; i < sectorCount(); ++i) {
+		_sectorOffsets[i] = _raw.data() + i * _bytesPerSector;
+	}
+
+	return _raw.size() == size();
 }
 
 bool disk::save(string fileName)
 {
-	auto dst = fopen(fileName.c_str(), "wb");
-	if (dst != NULL)
-	{
-		for (auto i = 0; i < sectorCount(); ++i) {
-			fwrite(_sectorOffsets[i], 1, _bytesPerSector, dst);
-		}
+	ofstream outfile(fileName, ios::out | ios::binary);
 
-		fclose(dst);
+	for (auto i = 0; i < sectorCount(); ++i) {
+		outfile.write((const char*)_sectorOffsets[i], _bytesPerSector);
 	}
 
-	return dst != NULL;
+	return outfile.good();
 }
 
 vector<unsigned char> disk::readSectors(int startSector, int sectorCount)
@@ -73,9 +76,9 @@ vector<unsigned char> disk::readSectors(int startSector, int sectorCount)
 	return sectors;
 }
 
-void disk::writeSectors(int startSector, int sectorCount, vector<unsigned char> sectors)
+void disk::writeSectors(int startSector, int sectorCount, unsigned char* sectors)
 {
 	for (auto i = 0; i < sectorCount; ++i) {
-		memcpy(_sectorOffsets[startSector+ i], sectors.data() + i * _bytesPerSector, _bytesPerSector);
+		memcpy(_sectorOffsets[startSector+ i], sectors + i * _bytesPerSector, _bytesPerSector);
 	}
 }

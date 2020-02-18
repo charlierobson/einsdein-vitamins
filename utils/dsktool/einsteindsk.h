@@ -3,18 +3,19 @@
 #include <string>
 #include <fstream>
 #include <vector>
-using namespace std;
 
 #include "dsk.h"
 
+using namespace std;
 
 class einyfile
 {
 public:
 	string _name;
 	int _size;
+	unsigned char _data[100 * 1024];
 
-	einyfile(char* name) :
+	einyfile(string name) :
 		_name(name),
 		_size(0),
 		_corrupt(false)
@@ -22,9 +23,29 @@ public:
 		memset(_data, 0, 100 * 1024);
 	}
 
+	einyfile(string name, vector<unsigned char> data) :
+		einyfile(name)
+	{
+		memcpy(_data, data.data(), data.size());
+		_size = ((data.size() + 127) / 128) * 128;
+	}
+
 	bool nameis(char* name)
 	{
 		return _name.compare(name) == 0;
+	}
+
+
+	void resetRead()
+	{
+		_cursor = 0;
+	}
+
+	unsigned char* readBytes(int count)
+	{
+		unsigned char* p = &_data[_cursor];
+		_cursor += count;
+		return p;
 	}
 
 	void write128(unsigned char* ptr, int nsectors, int extent, int block)
@@ -87,12 +108,11 @@ public:
 
 private:
 	bool _corrupt;
-
-	unsigned char _data[100 * 1024];
+	int _cursor;
 };
 
 
-class einsteindsk : dsk
+class einsteindsk : public dsk
 {
 public:
 	vector<einyfile*> _files;
@@ -101,7 +121,9 @@ public:
 	virtual ~einsteindsk();
 
 	virtual bool load(string pathToDSK);
+	virtual bool save(string pathToDSK);
 
 private:
 	bool getfiles();
+	bool putfiles();
 };

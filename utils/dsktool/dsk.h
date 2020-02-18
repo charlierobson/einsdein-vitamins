@@ -2,19 +2,21 @@
 
 #include<string>
 #include<vector>
-using namespace std;
 
 #include "disk.h"
 
+using namespace std;
+
 class dsk : public disk
 {
-	std::vector<char> _raw;
+	std::vector<unsigned char> _raw;
 
 	bool parseDSK();
 
 public:
-	dsk();
-	virtual ~dsk();
+	dsk() { }
+	virtual ~dsk() { }
 
 	virtual bool load(string fileName);
+	virtual bool save(string fileName);
 };

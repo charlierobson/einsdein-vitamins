@@ -68,10 +68,10 @@ bool dsk::parseDSK()
 		return false;
 	}
 
-	_trackCount = dib->nTracks;
-	_sectorsPerTrack = 0;
-
 	//!!!! only handling 10 sectors per track
+
+	init(dib->nTracks, 10, 512);
+
 	// 0x15(00)  =  21  =  256+20*256  =  sizeof(header)+10*512
 
 	for (auto i = 0; i < _trackCount; ++i)
@@ -105,29 +105,18 @@ bool dsk::parseDSK()
 	return true;
 }
 
-
-
-dsk::dsk() : disk()
-{
-}
-
-dsk::~dsk()
-{
-}
-
 bool dsk::load(string fileName)
 {
-	size_t size;
-    ifstream dskFile(fileName, ios::binary|ios::ate);
-
-	if (dskFile.good()) {
-		size = (size_t)dskFile.tellg();
-		_raw.resize(size);
-		dskFile.seekg(0, ios::beg);
-		dskFile.read(_raw.data(), size);
-	}
-
-	return memcmp(_raw.data(), "EXTENDED CPC DSK", 16) == 0
-		&& size == 215296
+	_raw = loadBytes(fileName);
+	return _raw.size() == 215296
+		&& memcmp(_raw.data(), "EXTENDED CPC DSK", 16) == 0
 		&& parseDSK();
 }
+
+bool dsk::save(string fileName)
+{
+	ofstream outfile(fileName, ios::out | ios::binary);
+	outfile.write((const char*)_raw.data(), 215296);
+	return outfile.good();
+}
+
