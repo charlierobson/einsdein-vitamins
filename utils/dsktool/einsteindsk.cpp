@@ -2,16 +2,6 @@
 
 typedef unsigned char BYTE;
 
-einsteindsk::einsteindsk(dsk& srcDSK) :
-	_dsk(srcDSK)
-{
-	getfiles();
-}
-
-einsteindsk::~einsteindsk() {
-}
-
-
 static char* cpUpTo(char* dest, const char* src, int max)
 {
 	int i;
@@ -30,9 +20,22 @@ static char* cpUpTo(char* dest, const char* src, int max)
 	return dest;
 }
 
-void einsteindsk::getfiles()
+
+einsteindsk::einsteindsk() : dsk()
 {
-	std::vector<einyfile> files;
+}
+
+einsteindsk::~einsteindsk() {
+}
+
+bool einsteindsk::load(string pathToDSKFile) {
+	bool success = dsk::load(pathToDSKFile);
+	return success & getfiles();
+}
+
+bool einsteindsk::getfiles()
+{
+	_files.clear();
 
 	for (auto i = 20; i < 24; ++i)
 	{
@@ -48,7 +51,7 @@ void einsteindsk::getfiles()
 		}
 		dirent;
 
-		vector<BYTE> sectorBytes = _dsk.readSectors(i, 1);
+		vector<BYTE> sectorBytes = readSectors(i, 1);
 		dirent* p = (dirent*)(sectorBytes.data());
 
 		for (auto j = 0; j < 16; ++j, ++p)
@@ -114,7 +117,7 @@ void einsteindsk::getfiles()
 				{
 					// read the block
 					int base = (p->blockIDs[block] - 1) * 4 + 24;
-					auto sectors = _dsk.readSectors(base, 4);
+					auto sectors = readSectors(base, 4);
 					outfile->write128(sectors.data(), nb > 16 ? 16 : nb, p->extent, block);
 
 					nb -= 16;
@@ -123,4 +126,6 @@ void einsteindsk::getfiles()
 			}
 		}
 	}
+
+	return _files.size() > 0;
 }

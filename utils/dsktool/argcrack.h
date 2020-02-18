@@ -1,201 +1,87 @@
 #ifndef __argcrack_h
 #define __argcrack_h
 
-#include <string>
-#include <algorithm>
-
 // (C) 2009 Charlie Robson
 
-const char argsep = ':';
-
-class pathutil
-{
-public:
-	static bool changeExtension(std::string& filename, const char* newextension)
-	{
-		size_t expos = filename.find_last_of('.');
-		bool dotfound = expos != std::string::npos;
-		if (dotfound)
-		{
-			std::string base = filename.substr(0, expos + 1);
-
-			if (newextension[0] == '.')
-			{
-				++newextension;
-			}
-
-			filename = base + newextension;
-		}
-
-		return dotfound;
-	}
-
-	static bool checkExtension(std::string& filename, const char* extension)
-	{
-		size_t expos = filename.find_last_of('.');
-		bool dotfound = expos != std::string::npos;
-		if (dotfound)
-		{
-			std::string extn = filename.substr(expos + 1);
-			dotfound = strcmp(extn.c_str(), extension) == 0;
-		}
-
-		return dotfound;
-	}
-
-private:
-	pathutil(){};
-	~pathutil(){};
-};
-
+#include <string>
+using namespace std;
 
 class argcrack
 {
 public:
 	argcrack(int argc, char **argv) :
-	  m_argc(argc),
-		  m_argv(argv)
-	  {
-	  }
+		m_argc(argc),
+		m_argv(argv)
+	{
+	}
 
-	  bool split(const int index, std::string& left, std::string& right)
-	  {
-		  try
-		  {
-			  if (m_argc > index+1)
-			  {
-				  std::string ssarg(m_argv[index+1]);
-				  size_t equoffs = ssarg.find_first_of(argsep);
-				  if (equoffs != -1)
-				  {
-					  left = ssarg.substr(0, equoffs);
-					  right = ssarg.substr(equoffs + 1, ssarg.length());
-					  return true;
-				  }
-			  }
-		  }
-		  catch(...)
-		  {
-		  }
+	bool eval(int index, int& result)
+	{
+		const char* val = m_argv[index];
 
-		  return false;
-	  }
+		int len = strlen(val);
+		if (!len)
+			return false;
 
-	  bool eval(const char* val, int& result)
-	  {
-		  int len = strlen(val);
-		  if (len)
-		  {
-			  int base = 0;
-			  if (*val == '%')
-			  {
-				  base = 2;
-				  ++val;
-			  }
-			  else if (*val == '$')
-			  {
-				  base = 16;
-				  ++val;
-			  }
-			  else if (len > 2 && val[0] == '0' && val[1] == 'x')
-			  {
-				  base = 16;
-				  val+=2;
-			  }
+		int base = 0;
+		if (*val == '%')
+		{
+			base = 2;
+			++val;
+		}
+		else if (*val == '$')
+		{
+			base = 16;
+			++val;
+		}
+		else if (len > 2 && val[0] == '0' && val[1] == 'x')
+		{
+			base = 16;
+			val += 2;
+		}
 
-			  char* final;
-			  result = strtol(val, &final, base);
+		char* final;
+		result = strtol(val, &final, base);
 
-			  if (*final == 0)
-			  {
-				  return true;
-			  }
-		  }
+		return *final == 0;
+	}
 
-		  return false;
-	  }
+	bool getint(const char* pname, int& target)
+	{
+		int n = indexof(pname);
+		if (n == -1 || n + 1 >= m_argc)
+			return false;
 
-	  // pname should be of the form:
-	  //
-	  //  parm:
-	  //
-	  bool getint(const char* pname, int& target)
-	  {
-		  try
-		  {
-			  for(int i = 1; i < m_argc; ++i)
-			  {
-				  if (strncmp(pname,m_argv[i],strlen(pname)) == 0)
-				  {
-					  eval(&m_argv[i][strlen(pname)], target);
+		return eval(n + 1, target);
+	}
 
-					  return true;
-				  }
-			  }
-		  }
-		  catch(...)
-		  {
-		  }
+	bool getstring(const char* pname, string& target)
+	{
+		int n = indexof(pname);
+		if (n == -1 || n + 1 >= m_argc)
+			return false;
 
-		  return false;
-	  }
+		target = m_argv[n+1];
+		return true;
+	}
 
+	int indexof(const char* pname)
+	{
+		for (int i = 1; i < m_argc; ++i)
+		{
+			if (strcmp(pname, m_argv[i]) == 0)
+			{
+				return i;
+			}
+		}
 
-	  // pname should be of the form:
-	  //
-	  //  parm:
-	  //
-	  bool getstring(const char* pname, std::string& target)
-	  {
-		  try
-		  {
-			  for(int i = 1; i < m_argc; ++i)
-			  {
-				  if (strncmp(pname,m_argv[i],strlen(pname)) == 0)
-				  {
-					  target = &m_argv[i][strlen(pname)];
-					  return true;
-				  }
-			  }
-		  }
-		  catch(...)
-		  {
-		  }
+		return -1;
+	}
 
-		  return false;
-	  }
-
-
-	  bool getat(int index, std::string& target)
-	  {
-		  bool enoughargs = m_argc > index;
-		  if (enoughargs)
-		  {
-			  target = m_argv[index];
-		  }
-
-		  return enoughargs;
-	  }
-
-
-	  bool ispresent(const char* pname)
-	  {
-		  try
-		  {
-			  for(int i = 1; i < m_argc; ++i)
-			  {
-				  if (strncmp(pname,m_argv[i],strlen(pname)) == 0)
-				  {
-					  return true;
-				  }
-			  }
-		  }
-		  catch(...)
-		  {
-		  }
-
-		  return false;
-	  }
+	bool ispresent(const char* pname)
+	{
+		return indexof(pname) != -1;
+	}
 
 private:
 	int m_argc;

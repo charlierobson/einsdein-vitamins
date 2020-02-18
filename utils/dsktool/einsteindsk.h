@@ -1,6 +1,7 @@
 #pragma once
 
 #include <string>
+#include <fstream>
 #include <vector>
 using namespace std;
 
@@ -73,34 +74,16 @@ public:
 		}
 	}
 
-	//int close()
-	//{
-	//	int err = -1;
+	bool save(string path)
+	{
+		if (_corrupt)
+			return false;
 
-	//	printf(" %s - ", _root.c_str());
+		ofstream outfile(path, ios::out | ios::binary);
+		outfile.write((const char*)_data, _size);
 
-	//	if (_corrupt)
-	//	{
-	//		puts(" File is corrupt.");
-	//	}
-	//	else
-	//	{
-	//		FILE* outfile = fopen(_name.c_str(), "wb");
-	//		if (outfile != NULL)
-	//		{
-	//			fwrite(_data, _size, 1, outfile);
-	//			fclose(outfile);
-
-	//			printf(" Wrote %d\n", _size);
-	//		}
-	//		else
-	//		{
-	//			printf(" Failed: err = %d\n", err);
-	//		}
-	//	}
-
-	//	return err;
-	//}
+		return outfile.good();
+	}
 
 private:
 	bool _corrupt;
@@ -109,16 +92,16 @@ private:
 };
 
 
-class einsteindsk
+class einsteindsk : dsk
 {
 public:
 	vector<einyfile*> _files;
 
-	einsteindsk(dsk& srcDSK);
+	einsteindsk();
 	virtual ~einsteindsk();
 
-private:
-	dsk& _dsk;
+	virtual bool load(string pathToDSK);
 
-	void getfiles();
+private:
+	bool getfiles();
 };

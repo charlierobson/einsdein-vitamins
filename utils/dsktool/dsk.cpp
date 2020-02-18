@@ -1,8 +1,6 @@
 #include <stdio.h>
 #include <ctype.h>
-#include <istream>
 #include <fstream>
-#include <iostream>
 
 #include "dsk.h"
 
