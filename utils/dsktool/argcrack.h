@@ -83,6 +83,19 @@ public:
 		return indexof(pname) != -1;
 	}
 
+	bool isHelpRequested()
+	{
+		for (int i = 1; i < m_argc; ++i)
+		{
+			if (strchr(m_argv[i],'?') != NULL)
+			{
+				return true;
+			}
+		}
+
+		return false;
+	}
+
 private:
 	int m_argc;
 	char** m_argv;

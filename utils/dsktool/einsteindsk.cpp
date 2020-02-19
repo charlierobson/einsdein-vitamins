@@ -76,13 +76,15 @@ einsteindsk::~einsteindsk() {
 }
 
 bool einsteindsk::load(string pathToDSKFile) {
-	bool success = dsk::load(pathToDSKFile);
-	return success & getfiles();
+	if (dsk::load(pathToDSKFile))
+		return getfiles();
+	return false;
 }
 
 bool einsteindsk::save(string pathToDSKFile) {
-	bool success = putfiles();
-	return success & dsk::save(pathToDSKFile);
+	if (putfiles())
+		return dsk::save(pathToDSKFile);
+	return false;
 }
 
 
@@ -99,7 +101,7 @@ bool einsteindsk::putfiles()
 	dirent* directoryEntry = directory;
 	memset(directory, 0xe5, sizeof(directory));
 
-	for_each(_files.begin(), _files.end(), [&](einyfile* file)
+	for (auto file : _files)
 	{
 		int recordCount = (file->_size + 127) / 128;		// a record is 128 bytes. all files are a multiple of this size.
 		int blockCount = (recordCount + 15) / 16;		// all files are allocated in 2k blocks on disk.
@@ -108,12 +110,12 @@ bool einsteindsk::putfiles()
 		if (freeExtents < extentCount)
 		{
 			cout << "Not enough free extents for " << file->_name << ": ignoring" << endl;
-			return;
+			continue;
 		}
 		else if (freeBlocks < blockCount)
 		{
 			cout << "Not enough free blocks for " << file->_name << ": ignoring" << endl;
-			return;
+			continue;
 		}
 
 		cout << "Adding " << file->_name << endl;
@@ -154,7 +156,7 @@ bool einsteindsk::putfiles()
 			++directoryEntry;
 			--freeExtents;
 		}
-	});
+	}
 
 	// write the directory after the DOS tracks
 	//

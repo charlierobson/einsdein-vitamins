@@ -108,15 +108,16 @@ bool dsk::parseDSK()
 bool dsk::load(string fileName)
 {
 	_raw = loadBytes(fileName);
-	return _raw.size() == 215296
-		&& memcmp(_raw.data(), "EXTENDED CPC DSK", 16) == 0
-		&& parseDSK();
+	if (_raw.size() < 215296 || memcmp(_raw.data(), "EXTENDED CPC DSK", 16) != 0)
+		return false;
+
+	return parseDSK();
 }
 
 bool dsk::save(string fileName)
 {
 	ofstream outfile(fileName, ios::out | ios::binary);
-	outfile.write((const char*)_raw.data(), 215296);
+	if (outfile.good())
+		outfile.write((const char*)_raw.data(), 215296);
 	return outfile.good();
 }
-
