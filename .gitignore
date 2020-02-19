@@ -10,3 +10,6 @@ Release
 temp
 dsk
 a.out
+*.pdb
+*.iobj
+*.ipdb
