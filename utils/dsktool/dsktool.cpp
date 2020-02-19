@@ -22,6 +22,11 @@ bool isDir(string filename)
 	return (_stat.st_mode & S_IFDIR) != 0;
 }
 
+static void printer(string s)
+{
+	cout << s << endl;
+}
+
 int main(int argc, char** argv)
 {
 	argcrack args(argc, argv);
@@ -44,6 +49,8 @@ int main(int argc, char** argv)
 		cout << "Invalid DSK file " << dskName << endl;
 		return 1;
 	}
+
+	//einyDisk.diag(&printer);
 
 	if (args.ispresent("dir")) {
 

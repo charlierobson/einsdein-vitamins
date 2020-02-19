@@ -15,6 +15,8 @@ protected:
 	int _sectorsPerTrack;
 	int _bytesPerSector;
 
+	void setRawSectorPtr(int track, int sector, unsigned char* ptr);
+
 public:
 	disk() { }
 	virtual ~disk() { }
@@ -22,7 +24,7 @@ public:
 	static vector<unsigned char> loadBytes(string filePath);
 
 	int size();
-	int sectorCount();
+	int totalSectorCount();
 
 	void init(int tracks, int sectors, int bytesPerSector);
 

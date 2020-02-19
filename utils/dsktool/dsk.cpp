@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <ctype.h>
 #include <fstream>
+#include <sstream>
 
 #include "dsk.h"
 
@@ -14,7 +15,7 @@ typedef struct
 	BYTE nTracks;
 	BYTE nSides;
 	BYTE unused[2];
-	BYTE trackSizeTable[256-52];
+	BYTE trackSizeTable[256 - 52];
 }
 DISK_INFORMATION_BLOCK;
 
@@ -94,7 +95,7 @@ bool dsk::parseDSK()
 
 		for (auto sector = 0; sector < 10; ++sector)
 		{
-			_sectorOffsets[track * 10 + sib->sectorID] = fptr;
+			setRawSectorPtr(track, sib->sectorID, fptr);
 			fptr += 512;
 
 			++_sectorsPerTrack;
@@ -120,4 +121,39 @@ bool dsk::save(string fileName)
 	if (outfile.good())
 		outfile.write((const char*)_raw.data(), 215296);
 	return outfile.good();
+}
+
+void dsk::diag(void(*logger)(string))
+{
+	BYTE* fptr = (BYTE*)_raw.data();
+
+	DISK_INFORMATION_BLOCK* dib = (DISK_INFORMATION_BLOCK*)fptr;
+	fptr += sizeof(DISK_INFORMATION_BLOCK);
+
+	if (memcmp(dib, "EXTENDED", 8) != 0)
+		return logger("No extended dsk tag found in DIB");
+
+	if (dib->nSides == 2)
+		return logger("Image has more than 1 side");
+
+	for (auto track = 0; track < dib->nTracks; ++track)
+	{
+		TRACK_INFORMATION_BLOCK* tib;
+		SECTOR_INFORMATION_BLOCK* sib;
+		tib = (TRACK_INFORMATION_BLOCK*)fptr;
+		sib = (SECTOR_INFORMATION_BLOCK*)(fptr + sizeof(TRACK_INFORMATION_BLOCK));
+
+		fptr += 256;
+		BYTE* sectorBase = fptr;
+
+		logger("Track: " + to_string(track) + " size code: " + to_string(dib->trackSizeTable[track]));
+
+		for (auto sector = 0; sector < 10; ++sector)
+		{
+			logger("  Sector " + to_string(sib->sectorID) + ", size: " + to_string(sib->sectorSize));
+
+			fptr += 512;
+			++sib;
+		}
+	}
 }

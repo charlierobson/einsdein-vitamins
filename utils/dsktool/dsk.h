@@ -19,4 +19,6 @@ public:
 
 	virtual bool load(string fileName);
 	virtual bool save(string fileName);
+
+	void diag(void(*logger)(string));
 };

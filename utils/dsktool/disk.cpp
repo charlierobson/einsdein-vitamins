@@ -20,7 +20,7 @@ int disk::size()
 	return _trackCount * _sectorsPerTrack * _bytesPerSector;
 }
 
-int disk::sectorCount()
+int disk::totalSectorCount()
 {
 	return _trackCount * _sectorsPerTrack;
 }
@@ -47,7 +47,7 @@ bool disk::load(string fileName)
 	init(40, 10, 512);
 
 	_raw = loadBytes(fileName);
-	for (auto i = 0; i < sectorCount(); ++i) {
+	for (auto i = 0; i < totalSectorCount(); ++i) {
 		_sectorOffsets[i] = _raw.data() + i * _bytesPerSector;
 	}
 
@@ -58,11 +58,16 @@ bool disk::save(string fileName)
 {
 	ofstream outfile(fileName, ios::out | ios::binary);
 
-	for (auto i = 0; i < sectorCount(); ++i) {
+	for (auto i = 0; i < totalSectorCount(); ++i) {
 		outfile.write((const char*)_sectorOffsets[i], _bytesPerSector);
 	}
 
 	return outfile.good();
+}
+
+void disk::setRawSectorPtr(int track, int sector, unsigned char* ptr)
+{
+	_sectorOffsets[track * 10 + sector] = ptr;
 }
 
 vector<unsigned char> disk::readSectors(int startSector, int sectorCount)
