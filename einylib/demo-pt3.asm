@@ -15,13 +15,16 @@ COL_BLACK		.equ $01
 COL_DBLUE		.equ $04
 
 ; time constants to give us a 20 millisecond timer period
-TC2				.equ 92
-TC3				.equ 54
+TC2				.equ 50
+TC3				.equ 100
 
 BDOS			.equ 5
 
 
 	.org	$100
+
+	ld		(oldstack),sp
+	ld		sp,stack
 
 	; upon entry $80 is command buffer
 	; $80 holds number of characters found after command name 0..n
@@ -99,17 +102,13 @@ selfmodaddr = $+1
 	ld		c,26
 	call	BDOS					; set buffer address
 
-	ld		e,'*'
-	ld		c,2
-	call	BDOS
-
 	ld		de,fcb					; read data
 	ld		c,20
 	call	BDOS
 	or		a
 	jr		z,{-}
 
-	ld		e,10
+	ld		e,10					; crlf
 	ld		c,2
 	call	BDOS
 	ld		e,13
@@ -126,13 +125,11 @@ _okreadyletsdoit:
 	ld		hl,buttons			; starting here
 	call	input.reset			; reset!
 
+	ld		hl,($fb06)	
+	ld		(oldirq),hl			; stash old vector for tidy-up
+
 	ld		hl,_irqhandler		; install own handler over the system's timer3 vector
 	ld		($fb06),hl
-
-	in		a,(VDP_STAT)		; clear existing vsync flag
--:	in		a,(VDP_STAT)		; wait for next one
-	rla
-	jr		nc,{-}
 
 	ld		a,$1f				; disable interrupt + timer mode + prescaler 16 + rising edge + clk starts + time constant follows + reset + control
 	out		(CTC_TMR2),a		; ctc channel 2 write timer config
@@ -147,15 +144,6 @@ _okreadyletsdoit:
 	ei
 
 	; and awaaay we go.
-
-	; result should be thin blue line. the line starts at the time the
-	; timer irq fires, and ends when vsync bit is set in VDP.
-
-	; the aim is to tighten the timer such that absolute minimum of time
-	; is wasted waiting for the vblank.
-
-	; in MESS line is a single pixel thick, one scanline.
-	; on real hardware line is 2..3 scanlines and background colour glitch
 
 loop:
 	; can't use the vdp vsync as it's read (and thus reset) in the interrupt
@@ -178,9 +166,27 @@ loop:
 	jr		nz,loop
 
 _ended:
-	ld		c,0					; warm boot
-	call	BDOS
+	di
 
+	ld		hl,(oldirq)
+	ld		($fb06),hl
+
+	ld		a,$3f				; disable interrupt + timer mode + prescaler 16 + rising edge + clk starts + time constant follows + reset + control
+	out		(CTC_TMR2),a		; ctc channel 2 write timer config
+	ld		a,$7d
+	out		(CTC_TMR2),a		; write time constant
+
+	ld		a,$df				; enable interrupt + counter mode + (n/a) + rising edge + clk starts + time constant follows + reset + control
+	out		(CTC_TMR3),a		; ctc channel 3 write timer config
+	ld		a,$7d
+	out		(CTC_TMR3),a		; write time constant
+
+	call	START+8				; reset PSG
+
+	ld		sp,(oldstack)
+
+	ei
+	rst		0					; warm start
 
 
 _invalidname:
@@ -195,33 +201,6 @@ _irqhandler:
 	exx							; doesn't save AF. ask me how i know.
 	push	af
 
--:	in		a,(VDP_STAT)		; wait for VDP VSYNC bit
-	rla
-	jr		nc,{-}
-
-	; ld		a,COL_DBLUE			; set border black
-	; out		(VDP_REG),a
-	; ld		a,$87
-	; out		(VDP_REG),a
-
-	; if we had a stable timer config that didn't drift then
-	; we wouldn't need to reset the timer. but life's too short
-	; to waste finding one :D so...
-	;
-	; reset timer to fire in 19.9 milliseconds time
-	; (92*16)*54 = 79488 / 4000000 = 0.0199 sec
-
-	ld		a,$1f
-	out		(CTC_TMR2),a
-	ld		a,TC2
-	out		(CTC_TMR2),a
-
-	ld		a,$df
-	out		(CTC_TMR3),a
-teecee3 = $+1
-	ld		a,TC3
-	out		(CTC_TMR3),a
-
 	call	input.resetpsgio
 	call	input.readrawbits
 
@@ -230,11 +209,6 @@ teecee3 = $+1
 	ld		(frames),hl
 
 	call	START+5				; play a quark
-
-	; ld		a,COL_BLACK			; set border black
-	; out		(VDP_REG),a
-	; ld		a,$87
-	; out		(VDP_REG),a
 
 	pop		af
 	exx
@@ -255,13 +229,18 @@ kexit = buttons + 2
 kup   = buttons + 5
 kdown = buttons + 8
 
-
-
+oldirq:
+	.dw		0
 
 #include "input.asm"
 #include "math.asm"
 #include "mem.asm"
 #include "PT3.asm"
+
+oldstack:
+	.dw		0
+stack:
+	.ds		512
 
 ; put this here so if any filename copying goes horribly wrong then we overwrite data and not code
 fcb:
