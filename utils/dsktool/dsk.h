@@ -11,7 +11,7 @@ class dsk : public disk
 {
 	std::vector<unsigned char> _raw;
 
-	bool parseDSK();
+	bool parse();
 
 public:
 	dsk() { }
@@ -19,6 +19,10 @@ public:
 
 	virtual bool load(string fileName);
 	virtual bool save(string fileName);
+
+	virtual void init(int tracks, int sectors, int bytesPerSector);
+	
+	bool cloneSectorsFrom(dsk& other);
 
 	void diag(void(*logger)(string));
 };

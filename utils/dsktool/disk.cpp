@@ -40,6 +40,13 @@ vector<unsigned char> disk::loadBytes(string filePath)
 	return data;
 }
 
+bool disk::saveBytes(string filePath, vector<unsigned char> bytes)
+{
+	ofstream outfile(filePath, ios::out | ios::binary);
+	outfile.write((const char*)bytes.data(), bytes.size());
+	return outfile.good();
+}
+
 // base implementation is a raw disk image dump, contiguous sectors
 //
 bool disk::load(string fileName)
@@ -84,6 +91,11 @@ vector<unsigned char> disk::readSectors(int startSector, int sectorCount)
 void disk::writeSectors(int startSector, int sectorCount, unsigned char* sectors)
 {
 	for (auto i = 0; i < sectorCount; ++i) {
-		memcpy(_sectorOffsets[startSector+ i], sectors + i * _bytesPerSector, _bytesPerSector);
+		memcpy(_sectorOffsets[startSector + i], sectors + i * _bytesPerSector, _bytesPerSector);
 	}
+}
+
+void disk::writeSectors(int startSector, int sectorCount, vector<unsigned char> sectors)
+{
+	writeSectors(startSector, sectorCount, sectors.data());
 }

@@ -47,58 +47,101 @@ typedef struct
 SECTOR_INFORMATION_BLOCK;
 // 8
 
-bool dsk::parseDSK()
+
+void dsk::init(int tracks, int sectors, int bytesPerSector)
+{
+	disk::init(tracks, sectors, bytesPerSector);
+
+	auto totalSize =
+		sizeof(DISK_INFORMATION_BLOCK) +
+		sizeof(TRACK_INFORMATION_BLOCK) * _trackCount +
+		sizeof(SECTOR_INFORMATION_BLOCK) * _sectorsPerTrack +
+		_trackCount * _sectorsPerTrack * _bytesPerSector;
+
+	_raw.resize(totalSize);
+
+	unsigned char* p = _raw.data();
+	DISK_INFORMATION_BLOCK dib = *(DISK_INFORMATION_BLOCK*)p;
+	strcpy(dib.headerString, "EXTENDED CPC DSK File\r\nDisk-Info\r\n");
+	strcpy(dib.creatorName, "dsktool");
+	dib.nTracks = _trackCount;
+	dib.nSides = 1;
+
+	auto trackStoreSize = 256 + (_sectorsPerTrack * _bytesPerSector);
+	memset(dib.trackSizeTable, trackStoreSize >> 8, _trackCount);
+
+	p += 256;
+
+	for (auto track = 0; track < _trackCount; ++track)
+	{
+		TRACK_INFORMATION_BLOCK tib = *(TRACK_INFORMATION_BLOCK*)p;
+		strcpy(tib.headerString, "Track-Info\r\n");
+		tib.trackNumber = track;
+		tib.sideNumber = 0;
+		tib.sectorSize = _bytesPerSector >> 8;
+		tib.nSectors = _sectorsPerTrack;
+
+		SECTOR_INFORMATION_BLOCK* sib = (SECTOR_INFORMATION_BLOCK*)(p + sizeof(TRACK_INFORMATION_BLOCK));
+
+		p += 256;
+
+		for (auto sector = 0; sector < _sectorsPerTrack; ++sector) {
+			sib->track = track;
+			sib->side = 0;
+			sib->sectorID = sector; // no interleaving. may hurt performance if written to physical disk.
+			sib->sectorSize = _bytesPerSector >> 8;
+			sib->dataLength = _bytesPerSector;
+			++sib;
+
+			_sectorOffsets[track * _sectorsPerTrack + sector] = p;
+			memset(p, 0xe5, _bytesPerSector);
+			p += _bytesPerSector;
+		}
+	}
+}
+
+bool dsk::cloneSectorsFrom(dsk& other)
+{
+	if (_trackCount != other._trackCount || _sectorsPerTrack != other._sectorsPerTrack || _bytesPerSector != other._bytesPerSector)
+		return false;
+
+	auto rawSectors = other.readSectors(0, _trackCount * _sectorsPerTrack);
+	writeSectors(0, _trackCount * _sectorsPerTrack, rawSectors);
+
+	return true;
+}
+
+bool dsk::parse()
 {
 	BYTE* fptr = (BYTE*)_raw.data();
-
-	TRACK_INFORMATION_BLOCK* tib;
-	SECTOR_INFORMATION_BLOCK* sib;
 
 	DISK_INFORMATION_BLOCK* dib = (DISK_INFORMATION_BLOCK*)fptr;
 	fptr += sizeof(DISK_INFORMATION_BLOCK);
 
 	if (memcmp(dib, "EXTENDED", 8) != 0)
-	{
 		return false;
-	}
-
-	//!!!! only handling single sided disks ATM
 
 	if (dib->nSides == 2)
-	{
 		return false;
-	}
 
-	//!!!! only handling 10 sectors per track
+	disk::init(dib->nTracks, 10, 512);
 
-	init(dib->nTracks, 10, 512);
-
-	// 0x15(00)  =  21  =  256+20*256  =  sizeof(header)+10*512
-
-	for (auto i = 0; i < _trackCount; ++i)
-	{
-		if (dib->trackSizeTable[i] != 0x15)
-		{
+	for (auto track = 0; track < _trackCount; ++track)
+		if (dib->trackSizeTable[track] != 0x15)
 			return false;
-		}
-	}
-
-	// ok, work out the sector offsets in the file
 
 	for (auto track = 0; track < _trackCount; ++track)
 	{
-		tib = (TRACK_INFORMATION_BLOCK*)fptr;
-		sib = (SECTOR_INFORMATION_BLOCK*)(fptr + sizeof(TRACK_INFORMATION_BLOCK));
+		TRACK_INFORMATION_BLOCK* tib = (TRACK_INFORMATION_BLOCK*)fptr;
+		SECTOR_INFORMATION_BLOCK* sib = (SECTOR_INFORMATION_BLOCK*)(fptr + sizeof(TRACK_INFORMATION_BLOCK));
 
 		fptr += 256;
 		BYTE* sectorBase = fptr;
 
-		for (auto sector = 0; sector < 10; ++sector)
-		{
+		for (auto sector = 0; sector < 10; ++sector) {
+
 			setRawSectorPtr(track, sib->sectorID, fptr);
 			fptr += 512;
-
-			++_sectorsPerTrack;
 			++sib;
 		}
 	}
@@ -112,7 +155,7 @@ bool dsk::load(string fileName)
 	if (_raw.size() < 215296 || memcmp(_raw.data(), "EXTENDED CPC DSK", 16) != 0)
 		return false;
 
-	return parseDSK();
+	return parse();
 }
 
 bool dsk::save(string fileName)

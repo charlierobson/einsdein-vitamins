@@ -87,7 +87,6 @@ bool einsteindsk::save(string pathToDSKFile) {
 	return false;
 }
 
-
 bool einsteindsk::putfiles()
 {
 	int block = 1;

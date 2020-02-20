@@ -38,6 +38,7 @@ int main(int argc, char** argv)
 		cout << "  extract filename (TO path-to-directory)" << endl;
 		cout << "  insert path-to-file" << endl;
 		cout << "  insert path-to-directory" << endl;
+		cout << "  dumpdos path-to-file" << endl;
 
 		exit(1);
 	}
@@ -49,8 +50,6 @@ int main(int argc, char** argv)
 		cout << "Invalid DSK file " << dskName << endl;
 		return 1;
 	}
-
-	//einyDisk.diag(&printer);
 
 	if (args.ispresent("dir")) {
 
@@ -105,7 +104,21 @@ int main(int argc, char** argv)
 			einyDisk._files.push_back(new einyfile(nameOnly, disk::loadBytes(insertPath)));
 		}
 
-		einyDisk.save(dskName);
+		if (!einyDisk.save(dskName)) {
+			cerr << "insert failed." << endl;
+			return 1;
+		}
+	}
+	else if (args.ispresent("dumpdos")) {
+
+		string fileToExtract;
+		args.getstring("dumpdos", fileToExtract);
+
+		auto dosSectors = einyDisk.readSectors(0, 20);
+		if (!einyDisk.saveBytes(fileToExtract, dosSectors)) {
+			cerr << "dumpdos failed." << endl;
+			return 1;
+		}
 	}
 	else {
 		cerr << "Unrecognised command." << endl;
