@@ -56,6 +56,7 @@ int main(int argc, char** argv)
 		for (auto file : einyDisk._files) {
 			cout << file->_name << "  (" << file->_size << ")" << endl;
 		}
+		cout << einyDisk._files.size() << " found" << endl;
 	}
 	else if (args.ispresent("extract")) {
 
@@ -88,7 +89,8 @@ int main(int argc, char** argv)
 					auto nameOnly = path(entry).filename().string();
 					transform(nameOnly.begin(), nameOnly.end(), nameOnly.begin(), ::toupper);
 
-					einyDisk._files.erase(remove_if(einyDisk._files.begin(), einyDisk._files.end(), [&](einyfile* f) -> bool { return nameOnly.compare(f->_name) == 0; }));
+					if (einyDisk._files.size())
+						einyDisk._files.erase(remove_if(einyDisk._files.begin(), einyDisk._files.end(), [&](einyfile* f) -> bool { return nameOnly.compare(f->_name) == 0; }));
 
 					einyDisk._files.push_back(new einyfile(nameOnly, disk::loadBytes(entry.path().string())));
 				}
@@ -99,7 +101,8 @@ int main(int argc, char** argv)
 			auto nameOnly = path(insertPath).filename().string();
 			transform(nameOnly.begin(), nameOnly.end(), nameOnly.begin(), ::toupper);
 
-			einyDisk._files.erase(remove_if(einyDisk._files.begin(), einyDisk._files.end(), [&](einyfile* f) -> bool { return nameOnly.compare(f->_name) == 0; }));
+			if (einyDisk._files.size())
+				einyDisk._files.erase(remove_if(einyDisk._files.begin(), einyDisk._files.end(), [&](einyfile* f) -> bool { return nameOnly.compare(f->_name) == 0; }));
 
 			einyDisk._files.push_back(new einyfile(nameOnly, disk::loadBytes(insertPath)));
 		}

@@ -248,5 +248,5 @@ bool einsteindsk::getfiles()
 		}
 	}
 
-	return _files.size() > 0;
+	return true;
 }
