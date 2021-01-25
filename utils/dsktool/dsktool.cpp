@@ -34,19 +34,25 @@ int main(int argc, char** argv)
 	if (argc < 2 || args.isHelpRequested()) {
 		cout << "Usage:" << endl << "  " << path(argv[0]).filename().string() << " COMMAND path-to-dsk-file" << endl << endl << "Where command looks like:" << endl;
 		cout << "  dir" << endl;
-		cout << "  extract * (to path-to-directory)" << endl;
+		cout << "  extract * (TO path-to-directory)" << endl;
 		cout << "  extract filename (TO path-to-directory)" << endl;
 		cout << "  insert path-to-file" << endl;
 		cout << "  insert path-to-directory" << endl;
 		cout << "  dumpdos path-to-file" << endl;
-
+		cout << "  new path-to-file" << endl;
 		exit(1);
 	}
 
 	einsteindsk einyDisk;
 
 	string dskName(argv[argc - 1]);
-	if (!isFile(dskName) || !einyDisk.load(dskName)) {
+
+	if (args.ispresent("new")) {
+
+		einyDisk.init(40, 10, 512);
+	}
+	else if (!isFile(dskName) || !einyDisk.load(dskName)) {
+
 		cout << "Invalid DSK file " << dskName << endl;
 		return 1;
 	}
@@ -57,6 +63,10 @@ int main(int argc, char** argv)
 			cout << file->_name << "  (" << file->_size << ")" << endl;
 		}
 		cout << einyDisk._files.size() << " found" << endl;
+	}
+	if (args.ispresent("diag")) {
+
+		einyDisk.diag(printer);
 	}
 	else if (args.ispresent("extract")) {
 
@@ -120,6 +130,19 @@ int main(int argc, char** argv)
 		auto dosSectors = einyDisk.readSectors(0, 20);
 		if (!einyDisk.saveBytes(fileToExtract, dosSectors)) {
 			cerr << "dumpdos failed." << endl;
+			return 1;
+		}
+	}
+	else if (args.ispresent("new")) {
+
+		string dosFile;
+		args.getstring("new", dosFile);
+
+		auto dos = einyDisk.loadBytes(dosFile);
+
+		einyDisk.writeSectors(0, 20, dos);
+		if (!einyDisk.save(dskName)) {
+			cerr << "new disk creation failed." << endl;
 			return 1;
 		}
 	}

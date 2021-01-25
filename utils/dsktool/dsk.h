@@ -17,6 +17,10 @@ public:
 	dsk() { }
 	virtual ~dsk() { }
 
+	int tracks;
+	int sectors;
+	int bytesPerSector;
+
 	virtual bool load(string fileName);
 	virtual bool save(string fileName);
 

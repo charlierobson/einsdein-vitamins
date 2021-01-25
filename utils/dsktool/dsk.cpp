@@ -53,9 +53,8 @@ void dsk::init(int tracks, int sectors, int bytesPerSector)
 	disk::init(tracks, sectors, bytesPerSector);
 
 	auto totalSize =
-		sizeof(DISK_INFORMATION_BLOCK) +
-		sizeof(TRACK_INFORMATION_BLOCK) * _trackCount +
-		sizeof(SECTOR_INFORMATION_BLOCK) * _sectorsPerTrack +
+		256 +					// DISK_INFORMATION_BLOCK
+		256 * _trackCount +		// TRACK_INFORMATION_BLOCK
 		_trackCount * _sectorsPerTrack * _bytesPerSector;
 
 	_raw.resize(totalSize);
@@ -121,7 +120,7 @@ bool dsk::parse()
 	if (memcmp(dib, "EXTENDED", 8) != 0)
 		return false;
 
-	if (dib->nSides == 2)
+	if (dib->nSides != 1)
 		return false;
 
 	disk::init(dib->nTracks, 10, 512);
